@@ -1,0 +1,81 @@
+Service discovery
+========================
+In any distributed architecture, we need to find the hostname or IP address of where a machine is located
+is known formally as “service discovery.” Service discov- ery can
+ be something as simple as maintaining a property file with the addresses of all the remote services used by an application, or something as formalized as a Uni- versal Description, Discovery, and Integration (UDDI) repository.
+
+ Service discovery is critical to microservice, cloud-based applications for two key reasons:
+ - Horizontal scaling or scale out —This pattern usually requires adjustments in the application architecture, such as adding more instances of a service inside a cloud service and more containers.
+ - Resiliency —This pattern refers to the ability to absorb the impact of problems within an architecture or service without affecting the business. Microservice architectures need to be extremely sensitive to preventing a problem in a single service (or service instance) from cascading up and out to the consumers of the service.
+    When a microservice instance becomes unhealthy or unavailable, most service discovery engines remove that instance from their internal list of available services.
+    The damage caused by a down service is minimized because the service discovery engine routes services around the unavailable service.
+
+
+- Highly available: If a node becomes unavailable, other nodes in the cluster should be able to take over.
+All instances of this environment(cluster) have an identical configuration and work together to pro- vide high availability, reliability, and scalability
+
+- Peer-to-peer: Each node in the service discovery cluster shares the state of a ser- vice instance.
+
+- Load balanced: Service discovery needs to dynamically load balance requests across all service instances.
+
+- Resilient: The service discovery’s client should cache service information locally.
+Local caching allows for gradual degradation of the service discovery feature so that if the service discovery service becomes unavailable, applications can still function and locate the services based on the information maintained in their local cache.
+
+- Fault tolerant: Service discovery needs to detect when a service instance isn’t healthy and remove that instance from the list of available services that can take client requests. It should detect these faults with services and take action with- out human intervention.
+
+Concepts in service discovery
+================================
+- Service registration: Como un servicio se registra con el agente de service discovery.
+- Client lookup of service address: Como un servicio cliente busca informacion del servicio
+- Information Sharing: Como los nodos comparten informacion del servicio
+- Health monitoring: Como los servicios comunican su estado de saludo al agente.
+
+1. It contacts the discovery service for all the instances a service consumer (client) is asking for and then caches data locally on the service consumer’s machine.
+2. Each time a client wants to call the service, the service consumer looks up the location information for the service from the cache. Usually, client-side caching will use a simple load-balancing algorithm like the round-robin load-balancing algorithm to ensure that service calls are spread across multiple service instances.
+3. The client then periodically contacts the discovery service and refreshes its cache of service instances. The client cache is eventually consistent, but there’s always a risk that when the client contacts the service discovery instance for a refresh and calls are made, calls might be directed to a service instance that isn’t healthy.
+
+Dependencias
+==============
+Netflix’s Eureka Service Discovery engine: Implements service discovery pattern
+Spring Cloud Load Balancer(Reemplazo de ribbon): For the client-side load balancing
+
+Notas:
+Eureka won’t immediately advertise any services that register with it.
+By default, it waits 5 minutes to give all of the services a chance to
+ register with it before advertising them. Using this line for local
+ testing helps to speed up the amount of time it takes for the Eureka
+ service to start and to show the services registered with it.
+ eureka.server.wait-time-in-ms-when-sync-empty: 5
+
+ - Individual services registering with Eureka take up to 30 seconds to
+  show up in the Eureka service.
+  That’s because Eureka requires three consecu- tive
+  heartbeat pings from the service, which are spaced 10 seconds apart,
+  before it will say the service is ready for use. Keep this in mind as you’re deploying and testing your own services.
+
+  http://localhost:8070/eureka/apps/licensing-service
+  http://<eureka service>:8070/eureka/apps/<APPID>
+
+three different Spring/Netflix client libraries in which a service consumer
+can interact with the Spring Cloud Load Balancer. These libraries will move
+from the lowest level of abstraction for interacting with the Load Balancer
+to the highest.
+
+- Spring Discovery Client: @EnableDiscoveryClient  - Activa eureka discovery clien
+is the trigger for Spring Cloud to enable the applica- tion to use the Discovery Client and the Spring Cloud Load Balancer libraries.
+You should only use the Discovery Client when your service needs to query the Load Balancer to understand what services and service instances are registered with it
+ -You aren’t taking advantage of the Spring Cloud client-side Load Balancer. By calling the Discovery Client directly, you get a list of services, but it becomes your responsibility to choose which returned service instance you’re going to invoke.
+ - You’re doing too much work. In the code, you have to build the URL that you’ll use to call your service. It’s a small thing, but every piece of code that you can avoid writing is one less piece of code that you have to debug.
+
+- Spring Discovery Client–enabled REST template
+
+- Netflix Feign client
+
+Resumen:
+- We use a service discovery pattern to abstract away the physical location of our services.
+- A service discovery engine like Eureka can seamlessly add and remove service instances from an environment without impacting the service clients.
+- Client-side load balancing can provide an extra level of performance and resil- iency by caching the physical location of a service on the client making the ser- vice call.
+- You can use these three different mechanisms in Spring Cloud and Netflix Eureka to invoke a service: Spring Cloud Discovery Client, Spring Cloud Load Balancer–backed RestTemplate, and Netflix’s Feign client.
+
+http://<licensing service Hostname/IP>:<licensing service Port>/v1/ organization/<organizationID>/license/<licenseID>/<client type( feign, discovery, rest)>
+

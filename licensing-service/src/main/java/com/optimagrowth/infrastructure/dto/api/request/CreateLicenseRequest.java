@@ -1,14 +1,13 @@
-package com.optimagrowth.infrastructure.dto;
+package com.optimagrowth.infrastructure.dto.api.request;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.springframework.hateoas.RepresentationModel;
 
 @Getter
 @Setter
 @ToString
-public class GetLicenseResponse extends RepresentationModel<GetLicenseResponse> {
+public class CreateLicenseRequest  {
   private int id;
   private String licenseId;
   private String description;

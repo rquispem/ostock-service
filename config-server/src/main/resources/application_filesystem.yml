@@ -1,0 +1,26 @@
+#It is vital to name all of the services that we are going to
+#create in our archi- tecture for service discovery
+spring:
+  application:
+    name: config-server
+  profiles:
+    active:
+      - native
+  cloud:
+    config:
+      server:
+        native:
+          searchLocations:
+            classpath: /config
+        bootstrap: true
+#port where config server will listen in on, in order to provide
+#  the requested configuration data.
+server:
+  port: 8071
+
+#Enable all Spring Boot Actuator endpoints.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

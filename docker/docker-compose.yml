@@ -1,0 +1,90 @@
+version: '3.9'
+services:
+  database:
+    image: postgres:latest
+    ports:
+      - "5433:5433"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "root123"
+      POSTGRES_DB:       "ostock_dev"
+      PGPORT: 5433
+    #    expose:
+    #      - "5433"
+    #      - "5432"
+    #    command: -p 5433
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/1-init.sql
+      - ./data.sql:/docker-entrypoint-initdb.d/2-data.sql
+    networks:
+      backend:
+        aliases:
+          - "database"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  configserver:
+    image: rquispe/configserver:0.0.1-SNAPSHOT
+    ports:
+      - "8071:8071"
+    environment:
+      ENCRYPT_KEY: "fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo"
+    networks:
+      backend:
+        aliases:
+          - "configserver"
+  eurekaserver:
+    image: rquispe/eurekaserver:0.0.1-SNAPSHOT
+    ports:
+      - "8070:8070"
+    depends_on:
+      database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "eurekaserver"
+  licensingservice:
+    image: rquispe/licensing-service:0.0.2-SNAPSHOT
+    environment:
+      PROFILE: "dev"
+      CONFIGSERVER_URI: "http://configserver:8071"
+      CONFIGSERVER_PORT:   "8071"
+      DATABASESERVER_PORT: "5433"
+      #      SPRING_DATASOURCE_URL: "jdbc:postgresql://database/ostock_dev"
+      ENCRYPT_KEY: "fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo"
+    depends_on:
+      database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+  organizationservice:
+    image: rquispe/organization-service:0.0.1-SNAPSHOT
+    environment:
+      PROFILE: "dev"
+      CONFIGSERVER_URI: "http://configserver:8071"
+      CONFIGSERVER_PORT: "8071"
+      DATABASESERVER_PORT: "5433"
+      #      SPRING_DATASOURCE_URL: "jdbc:postgresql://database/ostock_dev"
+      ENCRYPT_KEY: "fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo"
+    depends_on:
+      database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

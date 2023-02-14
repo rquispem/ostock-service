@@ -1,4 +1,4 @@
-package com.optimagrowth.infrastructure.dto;
+package com.optimagrowth.infrastructure.dto.api.request;
 
 import lombok.Getter;
 import lombok.Setter;

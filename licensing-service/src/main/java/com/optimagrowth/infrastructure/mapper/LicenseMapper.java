@@ -1,9 +1,9 @@
 package com.optimagrowth.infrastructure.mapper;
 
 import com.optimagrowth.domain.License;
-import com.optimagrowth.infrastructure.dto.CreateLicenseRequest;
-import com.optimagrowth.infrastructure.dto.GetLicenseResponse;
-import com.optimagrowth.infrastructure.dto.UpdateLicenseRequest;
+import com.optimagrowth.infrastructure.dto.api.request.CreateLicenseRequest;
+import com.optimagrowth.infrastructure.dto.api.request.UpdateLicenseRequest;
+import com.optimagrowth.infrastructure.dto.api.response.GetLicenseResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
@@ -19,4 +19,8 @@ public interface LicenseMapper {
   CreateLicenseRequest toCreateLicenseRequest(License license);
 
   UpdateLicenseRequest toUpdateLicenseRequest(License license);
+
+  License toModelFromEntity(com.optimagrowth.infrastructure.database.entity.License license);
+
+  com.optimagrowth.infrastructure.database.entity.License toEntityFromModel(License license);
 }

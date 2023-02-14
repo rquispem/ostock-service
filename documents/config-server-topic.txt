@@ -1,0 +1,38 @@
+Config server:
+- Because we will use the filesystem for storing application configuration
+information, we must tell the Spring Cloud Config Server to run with the native profile.
+
+- Profiles allows us to map our beans to different environments, such as dev, test, staging, production, native, and others.
+
+- Remember, native is just a profile created for the Spring Cloud Configuration Server, which indicates that the configuration files are going to be retrieved or read from the classpath or filesystem.
+
+- The client spring.application.name is the name of your application
+(for example, licens- ing service) and must map directly to the name of the config
+directory within your Spring Cloud Configuration Server
+
+Sample
+search-locations: file:///Users/illary.huaylupo
+search-locations: classpath:/config
+//NOTE The classpath attribute causes Spring Cloud Config Server to look in the src/main/resources/config folder.
+
+Refresh scope:
+Refrecar la aplicacion cuando las propiedades cambian, el servidor de configuracion
+siempre sirve la ultima version de una propiedad, como sea las aplicaciones
+clientes con spring boot solo leen las propiedades al inicio de la aplicacion
+por lo q cambios en el config server no van a ser tomados de manera
+automatica por las aplicaciones clientes. Spring actuator ofrece
+@RefreshScope annotation that allows a development team to access a /refresh endpoint that will force the Spring Boot application to reread its application configuration.
+
+Note a couple of things about the @RefreshScope annotation. This annotation only reloads the custom Spring properties
+you have in your application configuration. Items like your database configuration used by Spring Data won’t be reloaded by this
+annotation.
+
+docker run -d -p 8200:8200 --name vault -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' vault
+
+ curl -X "GET" "http://localhost:8071/licensing-service/default" -H "X-Config-Token: myroot"
+ http://localhost:8071/encrypt root123
+ http://localhost:8071/decrypt {cipher}44767430f8e7bb5e65289950107c03b7aeb773f05046b3869cf79dbb16c110ef
+
+- Spring uses profiles to launch a service to determine what environment proper- ties are to be retrieved from the Spring Cloud Config service.
+- The Spring Cloud Config service can use a file-based, Git-based, or Vault-based application configuration repository to store application properties.
+- he Spring Cloud Config service lets you encrypt sensitive property files using symmetric and asymmetric encryption.

@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: eureka-server
+  cloud:
+    loadbalancer:
+      enabled: true
+  config:
+    import: configserver:http://localhost:8071/
+
+server:
+  port: 8070
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+#     Tells the Eureka Server to not register with the Eureka service ...
+    register-with-eureka: false
+#     and to not cache registry information locally
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+#    Sets the initial time to wait 5ms before the server takes requests
+#    Eureka won’t immediately advertise any services that register with it. By default, it waits 5 minutes to give all of the services a chance to register with it before advertising them.
+    wait-time-in-ms-when-sync-empty: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ALL
+

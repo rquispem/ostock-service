@@ -1,14 +1,15 @@
 spring:
+  application:
+    name: organization-service
   profiles:
     active: dev
-  application:
-    name: licensing-service
-    activate:
-      on-profile:
-        - dev
+  #    Spring Boot 2.4 introduced a new way to import configuration data via the spring.config.import property.
+  #  This is now the default way to bind to Config Server.
   config:
     import: configserver:http://localhost:8071/
 
+server:
+  port: 8081
 eureka:
   instance:
     preferIpAddress: true

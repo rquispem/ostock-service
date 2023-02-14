@@ -1,12 +1,18 @@
 package com.optimagrowth.infrastructure.config;
 
-import com.optimagrowth.application.LicenseServiceUseCase;
-import com.optimagrowth.infrastructure.ports.input.LicenseServicePort;
+import com.optimagrowth.application.ports.input.LicenseServicePort;
+import com.optimagrowth.application.ports.output.LicenseRepository;
+import com.optimagrowth.application.usecase.LicenseServiceUseCase;
+import com.optimagrowth.infrastructure.OrganizationDiscoverClientFactory;
+import com.optimagrowth.infrastructure.adapters.output.LicenseRepositoryAdapter;
+import com.optimagrowth.infrastructure.database.repositories.DatabaseLicenseRepository;
+import com.optimagrowth.infrastructure.mapper.LicenseMapper;
 import java.util.Locale;
-import org.springframework.context.MessageSource;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
@@ -14,8 +20,9 @@ import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 public class ApplicationConfig {
 
   @Bean
-  public LicenseServicePort licenseServicePort(MessageSource messageSource) {
-    return new LicenseServiceUseCase(messageSource);
+  public LicenseServicePort licenseServicePort(LicenseRepository licenseRepository,
+                                               OrganizationDiscoverClientFactory factory) {
+    return new LicenseServiceUseCase(licenseRepository, factory);
   }
 
   @Bean
@@ -34,5 +41,17 @@ public class ApplicationConfig {
     //Sets the base name of the languages properties files
     messageSource.setBasenames("messages");
     return messageSource;
+  }
+
+  @Bean
+  public LicenseRepository licenseRepository(DatabaseLicenseRepository databaseLicenseRepository,
+                                             LicenseMapper licenseMapper) {
+    return new LicenseRepositoryAdapter(databaseLicenseRepository, licenseMapper);
+  }
+
+  @LoadBalanced //Gets a list of all the instances for the organization services
+  @Bean
+  public RestTemplate getRestTemplate() {
+    return new RestTemplate();
   }
 }
