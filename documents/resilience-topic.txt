@@ -191,3 +191,24 @@ management:
 ThreadLocal and resilience4j
 ============================
 ThreadLocal allows us to create variables that can be read and written to only by the same threads for safety.
+
+mvn clean package dockerfile:build
+docker-compose -f docker/docker-compose.yml up
+
+Resumen:
+- When designing highly distributed applications like a microservice, client resiliency must be taken into account.
+- Un solo servicio con un rendimiento deficiente puede desencadenar un efecto en cascada de agotamiento de los recursos,
+ ya que los subprocesos en el cliente que realiza la llamada se bloquean cuando se espera que se complete un servicio.
+- Three core client resiliency patterns are the circuit-breaker pattern, the fallback pattern, and the bulkhead pattern.
+- The circuit breaker pattern seeks to kill slow-running and degraded system calls so that these calls fail fast and
+prevent resource exhaustion.
+- The fallback pattern allows you to define alternative code paths in the event that a remote service call fails or the
+ circuit breaker for the call fails.
+- The bulkhead pattern segregates remote resource calls away from each other, isolating calls to a remote service into
+their own thread pool. If one set of service calls fails, its failure shouldn’t be allowed to “eat up” all the resources
+in the application container.
+- The rate limiter pattern limits the number of total calls in a given time period.
+- The retry pattern is responsible for making attempts when a service has temporarily failed.
+- La principal diferencia entre los patrones de bulkhead y  rate limiter es que
+  el bulkhead se encarga de limitar el número de llamadas simultáneas en un
+  tiempo, y el rate limiter limita el número total de llamadas durante un tiempo determinado.
