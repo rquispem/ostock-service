@@ -1,0 +1,39 @@
+https://github.com/rquispem/cloud-config/blob/master/organization-service-dev.properties
+
+https://github.com/ihuaylupo/manning-smia/blob/master/chapter7/licensing-service/src/main/java/com/optimagrowth/license/service/LicenseService.java
+
+https://interviewready.io/account
+
+https://globant.udemy.com/course/master-microservices-with-spring-docker-kubernetes/learn/lecture/26054110#overview
+
+Preparing for the System Design Interviews V2 - End to End
+Design Microservices Architecture with Patterns & Principles
+Building Modern Distributed Systems with Java
+Master Apache Kafka With Spring boot Java and Testing
+Microservices: Clean Architecture, DDD, SAGA, Outbox & Kafka
+Analytics Engineering Bootcamp
+Event-Driven Microservices: Spring Boot, Kafka and Elastic
+Distributed Systems & Cloud Computing with Java
+Software Architecture & Design of Modern Large Scale Systems
+Microservices with gRPC [Java + Spring Boot + Protobuf]
+Java Reactive Programming [ From Scratch ]
+Redis with Spring WebFlux
+GraphQL With Spring WebFlux
+Design Patterns With Spring WebFlux
+Reactive Microservices with Spring WebFlux
+Spring MicroServices using DDD and deploy to cloud foundry
+
+System Design Interview Guide for Software Architecture
+System Design Bootcamp : Crack Interviews and Build Systems
+Low Level System Design [An interview perspective]
+Pragmatic System Design
+The Complete Design Interview Course
+Domain Driven Design & Microservices for Architects
+Software Architecture & Technology of Large-Scale Systems
+
+
+
+
+
+
+

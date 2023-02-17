@@ -2,6 +2,7 @@ package com.optimagrowth.infrastructure.adapters.output;
 
 import com.optimagrowth.application.ports.output.OrganizationDiscoveryClient;
 import com.optimagrowth.domain.Organization;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ public class OrganizationLoadBalancedRestTemplateClientAdapter implements Organi
   /*
    * When using a Load Balancer– backed RestTemplate, builds the target URL with the Eureka service ID
    */
+  @CircuitBreaker(name = "restOrganizationService")
   @Override
   public Organization getOrganization(String organizationId) {
     ResponseEntity<Organization> restExchange =

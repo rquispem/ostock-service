@@ -10,7 +10,11 @@ import com.optimagrowth.infrastructure.dto.api.request.CreateLicenseRequest;
 import com.optimagrowth.infrastructure.dto.api.request.UpdateLicenseRequest;
 import com.optimagrowth.infrastructure.dto.api.response.GetLicenseResponse;
 import com.optimagrowth.infrastructure.mapper.LicenseMapper;
+import com.optimagrowth.infrastructure.utils.UserContextHolder;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping (value = "v1/organization/{organizationId}/license")
+@Slf4j
 public class LicenseController {
   private final LicenseServicePort licenseServicePort;
   private final LicenseMapper licenseMapper;
@@ -45,7 +50,8 @@ public class LicenseController {
   @GetMapping(value = "/{licenseId}/{clientType}")
   public ResponseEntity<GetLicenseResponse> getLicenseWithClient(@PathVariable("organizationId") String organizationId,
                                                                   @PathVariable("licenseId") String licenseId,
-                                                                 @PathVariable("clientType") String clientType) {
+                                                                 @PathVariable("clientType") String clientType)
+          throws TimeoutException {
     License license = licenseServicePort.getLicenseWithClientType(organizationId, licenseId, clientType);
     license.withComment(config.getProperty());
     GetLicenseResponse response = licenseMapper.ToGetLicenseResponse(license);
@@ -55,7 +61,8 @@ public class LicenseController {
 
   @GetMapping(value = "/{licenseId}")
   public ResponseEntity<GetLicenseResponse> getLicense(@PathVariable("organizationId") String organizationId,
-                                                       @PathVariable("licenseId") String licenseId) {
+                                                       @PathVariable("licenseId") String licenseId)
+          throws TimeoutException {
     License license = licenseServicePort.getLicense(licenseId, organizationId);
     if (Objects.isNull(license)) {
       throw new IllegalArgumentException(
@@ -100,5 +107,11 @@ public class LicenseController {
     var responseMessage = String.format(messageSource.getMessage(
             "license.delete.message", null, null), licenseId);
     return ResponseEntity.ok(responseMessage);
+  }
+
+  @GetMapping(value = "/")
+  public List<License> getLicenses(@PathVariable("organizationId") String organizationId) throws TimeoutException {
+    log.debug("LicenseServiceController Correlation id: {}", UserContextHolder.getContext().getCorrelationId());
+    return licenseServicePort.getLicensesByOrganization(organizationId);
   }
 }

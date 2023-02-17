@@ -1,1 +1,193 @@
-Todos los sistemas, especialmente los sistemas distribuidos, experimentan fallas. La forma en que construimos nuestras aplicaciones para responder a esa falla es una parte crítica del trabajo de cada desarrollador de software. Sin embargo, cuando se trata de construir sistemas resilientes, la mayoría de los ingenieros de software solo tienen en cuenta la falla total de una parte de la infraestructura o crítica.
+Todos los sistemas, especialmente los sistemas distribuidos,
+experimentan fallas. La forma en que construimos nuestras aplicaciones
+para responder a esa falla es una parte crítica del trabajo de cada
+desarrollador de software. Sin embargo, cuando se trata de construir
+sistemas resilientes, la mayoría de los ingenieros de software solo tienen
+en cuenta la falla total de una parte de la infraestructura o crítica.
+
+
+Cuando un servicio falla, es fácil detectar que ya no está allí y la aplicación puede sortearlo.
+Sin embargo, cuando un servicio funciona lento, es extremadamente difícil
+detectar ese bajo rendimiento y enrutarlo. Veamos algunas razones por las cuales:
+
+- La degradación del servicio puede comenzar como intermitente y luego generar
+impulso. La degradación del servicio también puede ocurrir solo en pequeñas ráfagas. Los primeros signos de falla pueden
+ ser un pequeño grupo de usuarios que se quejan de un problema hasta que, de repente, el contenedor de la aplicación agota
+ su grupo de subprocesos y colapsa por completo.
+
+- Las llamadas a servicios remotos suelen ser sincrónicas y no interrumpen una llamada
+de larga duración. El desarrollador de la aplicación normalmente llama a un servicio para realizar una acción y espera
+a que el servicio regrese. La persona que llama no tiene idea de un tiempo de espera para evitar que la llamada de servicio se cuelgue.
+
+- Las aplicaciones a menudo se diseñan para hacer frente a fallas completas de recursos remotos, no a degradaciones
+parciales. A menudo, siempre que el servicio no haya fallado por completo, una aplicación continuará llamando a
+ un servicio que se está comportando mal y no fallará rápidamente. En este caso, la aplicación o el servicio que realiza
+  la llamada puede degradarse sin problemas o, lo que es más probable, bloquearse debido al agotamiento de los recursos.
+  El agotamiento de recursos se produce cuando un recurso limitado, como un grupo de subprocesos o una conexión a la base
+   de datos, se agota y el cliente que llama debe esperar a que ese recurso vuelva a estar disponible.
+
+
+Warning
+========
+Lo insidioso de los problemas causados por servicios remotos de bajo rendimiento es que no solo son difíciles de detectar,
+ sino que pueden desencadenar un efecto en cascada que puede extenderse por todo un ecosistema de aplicaciones.
+ Sin medidas de seguridad implementadas, un solo servicio con un rendimiento deficiente puede eliminar rápidamente
+ varias aplicaciones. Las aplicaciones basadas en microservicios basadas en la nube son particularmente vulnerables a
+ este tipo de interrupciones porque estas aplicaciones se componen de una gran cantidad de servicios distribuidos
+ detallados con diferentes piezas de infraestructura involucradas en completar la transacción de un usuario.
+ Los patrones de resiliencia son uno de los aspectos más críticos de la arquitectura de microservicios.
+
+
+ Client-Side resiliency patterns:
+ ===================================
+ Los patrones de software de resiliencia del lado del cliente se enfocan en proteger a un cliente de un recurso remoto
+  (otra llamada de microservicio o búsqueda en la base de datos) para que no se bloquee cuando el recurso remoto
+  falla debido a errores o bajo rendimiento. Estos patrones permiten que el cliente falle rápidamente y no consuma
+   recursos valiosos, como conexiones de bases de datos y grupos de subprocesos.
+   También evitan que el problema del servicio remoto de bajo rendimiento se propague  a los consumidores del cliente.
+
+   Patterns
+   1. Client side load balancer: The service client caches microservice endpoints retrieved during service discovery.
+   If the client-side load balancer detects a problem, it can remove that service instance from the pool of available service locations
+
+   2. Circuit break: The circuit breaker pattern ensures that a service client does not repeatedly call a failing service.
+   when a remote service is called, the circuit breaker monitors the call. If the calls take too long, the circuit breaker
+   intercedes and kills the call. The circuit breaker pattern also monitors all calls to a remote resource, and if enough
+    calls fail, the circuit breaker implementation will “pop,” failing fast and pre- venting future calls to the failing remote resource.
+
+   3. Fallback: When a call fails, fallback asks if there is an alternative that can be executed.
+   This usually involves looking for data from another data source or queueing the user’s request for future processing.
+    The user’s call is not shown an exception indicating a problem, but they can be notified that their request will have
+    to be tried later.
+
+   4. Bulkhead: segrega diferentes llamadas de servicio en el cliente de servicio para garantizar que un servicio con un
+   comportamiento deficiente no utilice todos los recursos del cliente.
+   When using the bulkhead pattern, you break the calls to remote resources into their own thread pools and reduce the risk
+   that a problem with one slow remote resource call will take down the entire application.
+   The thread pools act as the bulkheads for your service. Each remote resource is segregated and assigned to a thread
+   pool. If one service is responding slowly, the thread pool for that type of service call can become saturated and
+   stop processing requests. Assigning services to thread pools helps to bypass this type of bottleneck so that other
+   services won’t become saturated.
+
+   App A -> Licensing Service -> circuit breaker -> OrganizationServ -> Inventori service
+   En el ejemplo si algo sale mal con inventory service se malogra todo en cascada
+   el consumo de recursos de los threads es grande, circuit breaker puede solucionar
+   esto fallando rapido y adicionalmente aplicano fallback
+
+   Beneficios de circuit breaker:
+   - Fail fast: Cuando un servicio remoto experimenta una degradación, la aplicación fallará rápidamente y evitará
+   problemas de agotamiento de recursos que generalmente cierran toda la aplicación. En la mayoría de las situaciones de
+   interrupción, es mejor estar parcialmente inactivo en lugar de estar completamente inactivo.
+
+   - Fail gracefully(Fallar con gracia): Al agotar el tiempo y fallar rápidamente, el patrón circuit breaker nos brinda la
+    capacidad de fallar con gracia o buscar mecanismos alternativos para llevar a cabo la intención del usuario.
+    Por ejemplo, si un usuario está tratando de recuperar datos de una fuente de datos y esa fuente de datos está
+    experimentando una degradación del servicio, entonces nuestros servicios pueden recuperar esos datos desde otra ubicación.
+
+   - Recover seamlessly(Recuperarse sin problemas): Con el patrón circuit breaker actuando como intermediario, el disyuntor
+    puede comprobar periódicamente si el recurso solicitado vuelve a estar en línea y volver a permitir el acceso a él sin intervención humana.
+
+    Libs:
+    =====
+    Resilience4j (antes se usaba Hystrix): es una biblioteca de tolerancia a fallos inspirada en Hystrix. Ofrece los siguientes patrones para aumentar la tolerancia a fallas debido a problemas de red o fallas de cualquiera de nuestros múltiples servicios:
+    - Circuit breaker: Stops making requests when an invoked service is failing
+    - Retry: Retries a service when it temporarily fails
+    - Bulkhead: Limita el número de solicitudes de servicio concurrentes salientes para evitar
+                sobrecarga
+    - Rate limit: Limits the number of calls that a service receives at a time
+    - Sets alternative paths for failing requests
+
+    Con Resilience4j, podemos aplicar varios patrones a la misma llamada de método definiendo las anotaciones para ese método.
+
+Orden de ejecucion
+    Retry ( CircuitBreaker ( RateLimiter ( TimeLimiter ( Bulkhead ( Function ) )
+    ➥))) Retry is applied (if needed) at the end of the call This is valuable
+    to remember when trying to combine patterns,
+    but we can also use the patterns as individual features.
+
+    states circuit
+    - OPEN
+    - CLOSED
+    - HALF_OPEN
+    - DISABLED: Always allow access
+    - FORCED_OPEN: Always deny access
+    https://resilience4j.readme.io/v0.17.0/docs/circuitbreaker
+
+
+with 12 results. This ring contains 0 for all the successful requests and 1
+ when it fails to receive a response from the invoked service.
+
+ The closed state uses a ring bit buffer to store the success or failure status
+  of the requests. When a successful request is made, the circuit breaker saves
+  a 0 bit in the ring bit buffer. But if it fails to receive a response from the
+   invoked service, it saves a 1.
+
+To calculate a failure rate, the ring must be full. For example, in the previous sce- nario,
+ at least 12 calls must be evaluated before the failure rate can be calculated. If only 11
+  requests are evaluated, the circuit breaker will not change to an open state even if all 11
+   calls fail.
+
+  Fallback:
+  This method must reside in the same class as the original method that was protected by @Circuit- Breaker.
+   To create the fallback method in Resilience4j, we need to create a method that contains the same signature as the originating function plus one extra parameter,
+    which is the target exception parameter
+
+  Bulkhead: segrega las llamadas de recursos remotos en sus propios grupos de subprocesos para que se pueda contener un
+  solo servicio que se comporta mal y no bloquear el contenedor.
+
+  - Semaphore bulkhead: Uses a semaphore isolation approach, limiting the number of concurrent requests to the service.
+  Once the limit is reached, it starts rejecting requests.
+  - Thread pool bulkhead: Uses a bounded queue and a fixed thread pool. This approach only rejects a request when the pool and the queue are full.
+  Each remote resource call is placed in its own thread pool. Each thread pool has a maximum number of threads that can be used to process a request.
+  Un servicio de bajo rendimiento solo afecta a otras llamadas de servicio en el mismo grupo de subprocesos, lo que limita el daño que puede causar la llamada.
+
+  What’s the proper sizing for a custom thread pool? To answer that question, you can
+  use the following formula:
+  (requests per second at peak when the service is healthy * 99th percentile latency in seconds) + small amount of extra threads for overhead
+
+Retry:
+Como su nombre lo indica, el patrón de reintento es responsable de reintentar
+los intentos de comunicarse con un servicio cuando ese servicio falla
+ inicialmente. El concepto clave detrás de este patrón es proporcionar una forma de
+ obtener la respuesta esperada al intentar invocar el mismo servicio una o más
+ veces a pesar de la falla (por ejemplo, una interrupción de la red). Para este patrón, debemos especificar el número de
+ reintentos para una determinada instancia de servicio y el intervalo que queremos pasar entre cada reintento.
+Resilience4j provides two implementations for the rate limiter pattern:
+- Atomic- RateLimiter(default): is based on having one java.util.concurrent.Semaphore store the current permissions
+- SemaphoreBasedRateLimiter:  splits all nanoseconds from the start into cycles, and each cycle duration is the refresh
+ period (in nanoseconds). Then at the beginning of each cycle, we should set the active permissions to limit the period.
+
+  ActiveCycle—The cycle number used by the last call
+  ActivePermissions—The count of available permissions after the last call
+  NanosToWait—The count of nanoseconds to wait for permission for the last call
+
+ Cycles are equal time pieces.
+  If the available permissions are not enough, we can perform a permission reser-
+ vation by decreasing the current permissions and calculating the time we need to wait for the permission to appear.
+
+ NOTE In up-to-date cloud architectures, it is a good option to include auto- scaling,
+
+ La principal diferencia entre el patrón bulkhead y rate limiter es
+ que el patrón bulkhead se encarga de limitar el número de llamadas
+  simultáneas (por ejemplo, sólo permite X llamadas simultáneas a la vez).
+   Con el limitador de frecuencia, podemos limitar el número de llamadas
+   totales en un período de tiempo determinado (por ejemplo, permitir X
+    número de llamadas cada Y segundos).
+
+   If you want to block concurrent times, your best choice is a bulkhead,
+   but if you want to limit the total number of calls in a specific time period, your best option is the rate limiter.
+
+http://localhost:8080/actuator/health
+
+resilience4j.circuitbreaker:
+  instances:
+    backendA:
+      registerHealthIndicator: true
+management:
+  health:
+   circuitbreakers:
+     enabled: true
+
+ThreadLocal and resilience4j
+============================
+ThreadLocal allows us to create variables that can be read and written to only by the same threads for safety.

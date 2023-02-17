@@ -31,3 +31,71 @@ management:
       enabled: true
     diskspace:
       enabled: true
+    circuitbreakers:
+      enabled: true
+
+resilience4j.circuitbreaker:
+  instances:
+    restOrganizationService:
+      registerHealthIndicator: true
+      ringBufferSizeInClosedState: 6
+      ringBufferSizeInHalfOpenState: 4
+#      Sets the time the circuit breaker should wait before changing the status from open to half-open
+      waitDurationInOpenState: 20s
+#      Configures the percentage of the failure rate thres- hold. Remember, when the failure rate is greater than or equal to this threshold, the circuit breaker changes to the open state and starts short-circuiting calls.
+      failureRateThreshold: 60
+    circuitLicenseRepositoryAdapter:
+      registerHealthIndicator: true
+      ringBufferSizeInClosedState: 5
+      ringBufferSizeInHalfOpenState: 3
+      waitDurationInOpenState: 10s
+      failureRateThreshold: 50
+#      Sets the exceptions that should be recorded as failures
+      recordExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.apache.http.conn.HttpHostConnectException
+        - java.io.IOException
+        - java.util.concurrent.TimeoutException
+        - org.springframework.web.client.ResourceAccessException
+
+resilience4j.bulkhead:
+  instances:
+    #      With the semaphore approach, sets maxConcurrentCalls and maxWaitDuration
+    bulkheadLicenseService:
+#      The maximum amount of time to block a thread
+      maxWaitDuration: 10000ms
+#      The maximum number of concurrent calls
+      maxConcurrentCalls: 20
+
+resilience4j.thread-pool-bulkhead:
+  instances:
+    bulkheadLicenseService:
+      maxThreadPoolSize: 1
+      coreThreadPoolSize: 1
+      queueCapacity: 1
+#      The maximum time that idle threads wait for new tasks before terminating
+#      keepAliveDuration: 20ms
+
+resilience4j.retry:
+    instances:
+      retryLicenseService:
+        maxRetryAttempts: 5
+        waitDuration: 10000
+        retryExceptions:
+          - java.util.concurrent.TimeoutException
+
+resilience4j.ratelimiter:
+  instances:
+    rateLimiterLicenseService:
+#      Defines the time a thread waits for permission
+      timeoutDuration: 3000ms
+      limitRefreshPeriod: 5000
+#      Defines the number of permissions available during a limit refresh period
+      limitForPeriod: 5
+
+
+logging:
+  level:
+    org.springframework.web: WARN
+    com.optimagrowth: DEBUG
+    io.github.resilience4j: TRACE

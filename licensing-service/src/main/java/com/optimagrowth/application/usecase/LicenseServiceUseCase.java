@@ -5,7 +5,9 @@ import com.optimagrowth.application.ports.output.LicenseRepository;
 import com.optimagrowth.domain.License;
 import com.optimagrowth.domain.Organization;
 import com.optimagrowth.infrastructure.OrganizationDiscoverClientFactory;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 public class LicenseServiceUseCase implements LicenseServicePort {
 
@@ -19,7 +21,7 @@ public class LicenseServiceUseCase implements LicenseServicePort {
   }
 
   @Override
-  public License getLicense(String licenseId, String organizationId) {
+  public License getLicense(String licenseId, String organizationId) throws TimeoutException {
     return licenseRepository
             .findByOrganizationIdAndLicenseId(organizationId, licenseId);
 
@@ -48,7 +50,7 @@ public class LicenseServiceUseCase implements LicenseServicePort {
   @Override
   public License getLicenseWithClientType(String organizationId,
                                           String licenseId,
-                                          String clientType) {
+                                          String clientType) throws TimeoutException {
     License license = licenseRepository.findByOrganizationIdAndLicenseId(organizationId,
             licenseId);
     if (null == license) {
@@ -63,6 +65,11 @@ public class LicenseServiceUseCase implements LicenseServicePort {
       license.setContactPhone(organization.getContactPhone());
     }
     return license;
+  }
+
+  @Override
+  public List<License> getLicensesByOrganization(String organizationId) throws TimeoutException {
+    return licenseRepository.findByOrganizationId(organizationId);
   }
 
   private Organization retrieveOrganizationInfo(String organizationId, String clientType) {
