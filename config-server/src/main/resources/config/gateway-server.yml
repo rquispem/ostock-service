@@ -1,0 +1,45 @@
+server:
+  port: 8072
+
+eureka:
+  instance:
+    preferIpAddress: true
+    lease-renewal-interval-in-seconds: 15
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka/
+
+spring:
+  cloud:
+    gateway:
+      discovery.locator:
+        enabled: true
+        lowerCaseServiceId: true
+      routes:
+#      This optional ID is an arbitrary route ID.
+      - id: organization-service
+#        Sets the route’s destination URI
+        uri: lb://organization-service
+#        The path, aunque establecida por el método load(), es solo otra opción
+        predicates:
+        - Path=/organization/**
+#        Filters a collection of Spring web.filters to modify the request or response before or after sending the response
+        filters:
+#        Rewrites the request path, from /organization/** to /**, by taking the path regexp as a parameter and a replacement order
+        - RewritePath=/organization/(?<path>.*), /$\{path}
+      - id: licensing-service
+        uri: lb://licensing-service
+        predicates:
+        - Path=/license/**
+        filters:
+        - RewritePath=/license/(?<path>.*), /$\{path}
+
+management:
+  endpoint:
+    gateway.enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"

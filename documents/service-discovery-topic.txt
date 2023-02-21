@@ -81,3 +81,116 @@ Resumen:
 
 http://<licensing service Hostname/IP>:<licensing service Port>/v1/ organization/<organizationID>/license/<licenseID>/<client type( feign, discovery, rest)>
 
+
+
+Eureka Self Preservation and Renewal.
+===================================
+During the start-up, the clients trigger a REST call with the Eureka server to self-register to the server's instance
+registry. When a graceful shutdown occurs after use, the clients trigger another REST call so that the server can wipe
+out all the data related to the caller.
+To handle ungraceful client shutdowns the server expects heartbeats from the client at specific intervals.
+This is called renewal. If the server stops receiving the heartbeat for a specified duration, then it will start
+ evicting the stale instances.
+
+ The mechanism that stops evicting the instances when the heartbeats are below the expected threshold is called
+ self-preservation. This might happen in the case of a poor network partition, where the instances are still up,
+ but just can't be reached for a moment or in the case of an abrupt client shutdown.
+
+ And when the server activates self-preservation mode it holds the instance eviction until the renewal rate is back
+ above the expected threshold.
+
+
+Self-Preservation Configurations
+========================================
+By default, Eureka servers run with self-preservation enabled.
+However, for the sake of our understanding, let's go through each of these configurations on the server-side.
+eureka.server.enable-self-preservation: Configuration for disabling self-preservation – the default value is true
+eureka.server.expected-client-renewal-interval-seconds: The server expects client heartbeats at an interval configured with this property – the default value is 30
+eureka.instance.lease-expiration-duration-in-seconds: Indicates the time in seconds that the Eureka server waits since it received the last heartbeat from a client before it can remove that client from its registry – the default value is 90
+eureka.server.eviction-interval-timer-in-ms: This property tells the Eureka server to run a job at this frequency to evict the expired clients – the default value is 60 seconds
+eureka.server.renewal-percent-threshold: Based on this property, the server calculates the expected heartbeats per minute from all the registered clients – the default value is 0.85
+eureka.server.renewal-threshold-update-interval-ms: This property tells the Eureka server to run a job at this frequency to calculate the expected heartbeats from all the registered clients at this minute – the default value is 15 minutes
+
+https://www.baeldung.com/eureka-self-preservation-renewal
+
+Dynamically reloading route configuration
+==========================================
+The ability to dynamically reload routes is useful because it allows us to change the mapping of routes without
+having to restart the Gateway server(s).
+
+Now, if we want to add new route mappings on the fly, all we have to do is make the changes to the configuration file
+and commit those changes back to the Git repository where Spring Cloud Config pulls its configuration data.
+
+Spring Actuator exposes a POST-based endpoint route, actuator/gateway/refresh, that will cause it to reload its route
+configuration. Once this actuator/ gateway/refresh is reached, if you then enter the actuator/gateway/routes
+endpoint, you’ll see that two new routes are exposed. The response of the actuator/gateway/refresh returns
+an HTTP 200 status code without a response body.
+
+Predicate and Filter factories
+==============================
+cuando queremos escribir una lógica personalizada que se aplicará contra todas las llamadas de servicio que fluyen a
+través de la puerta de enlace. La mayoría de las veces, usaremos esta lógica personalizada para hacer cumplir un conjunto
+consistente de políticas de aplicaciones como seguridad, registro y seguimiento entre todos los servicios.
+Estas políticas de aplicación se consideran preocupaciones transversales porque queremos que estas estrategias se
+apliquen a todos los servicios de nuestra aplicación sin tener que modificar cada uno para implementarlas.
+
+De esta manera, las fábricas de filtros y predicados de Spring Cloud Gateway se pueden usar de manera similar a las
+clases de aspecto de Spring. Estos pueden igualar o interceptar un amplio conjunto de comportamientos y decorar o
+cambiar el comportamiento de la llamada sin que el codificador original se dé cuenta del cambio. Si bien un filtro de
+ servlet o un aspecto de Spring se localiza en un servicio específico, el uso de la puerta de enlace y sus fábricas de
+ filtros y predicados nos permite implementar preocupaciones transversales en todos los servicios que se enrutan a través
+ de la puerta de enlace.
+
+ gateway client -> gateway handler mapping(se encarga de verificar si la ruta solicitada coincide con la configuración
+ de la ruta.) -> Gateway web handler(lee los filtros configurados para una ruta específica y luego pasa la solicitud a
+ los filtros para su procesamiento.) -> Filter(order 0, 1 , n) -> Proxied service
+
+ filter allows us to implement a chain of business logic that each service request passes through as it’s implemented
+
+ Built in predicates
+ ===================
+ Los predicados integrados son objetos que nos permiten verificar si las solicitudes cumplen un conjunto de condiciones
+  antes de ejecutarlas o procesarlas. Para cada ruta, podemos establecer múltiples fábricas de predicados, que se usan y
+  combinan a través del AND lógico.
+These predicates can be applied in the code programmatically or via configura- tions,
+
+predicates:
+    - Path=/organization/**
+Before, After, Between, Header, Host, Method, Path, Query
+Sample:
+Before=2020-03-11T...
+After=2020-03-11T...
+Between=2020-03-11T...,2020-04-11T...
+Header=X-Request-Id, \d+
+Host=**.example.com
+Method=GET
+Path=/organization/{id}
+Query=id, 1
+
+Built in Filters
+==================
+Las fábricas de filtros integradas nos permiten inyectar puntos de cumplimiento de políticas en nuestro código y
+realizar una gran cantidad de acciones en todas las llamadas de servicio de manera consistente. En otras palabras,
+estos filtros nos permiten modificar las solicitudes y respuestas HTTP entrantes y salientes.
+
+AddRequestHeader, AddResponseHeader, AddRequestParameter, PrefixPath, RequestRateLimiter,
+RedirectTo, RemoveNonProxy, RemoveRequestHeader, RemoveResponseHeader,
+RewritePath, SecureHeaders, SetPath, SetStatus, SetResponseHeader
+
+Samples:
+RemoveRequestHeader=X-Request-Foo
+RemoveResponseHeader=X-Organization-ID
+RewritePath=/organization/(?<path>.*), /$\{path}
+SetPath=/{organization}
+SetStatus=500
+SetResponseHeader=X-Response-ID,123
+
+
+Pre-filters: —A pre-filter is invoked before the actual request is sent to the target destination. A pre-filter usually
+carries out the task of making sure that the service has a consistent message format (key HTTP headers are in place,
+for example) or acts as a gatekeeper to ensure that the user calling the service is authenticated
+(they are whom they say they are).
+
+Post-filters—A post-filter is invoked after the target service, and a response is sent back to the client. Usually,
+we implement a post-filter to log the response back from the target service, handle errors, or audit the response for
+sensitive information.

@@ -48,7 +48,7 @@ public class LicenseRepositoryAdapter implements LicenseRepository {
           fallbackMethod = "buildFallbackLicense")
   @RateLimiter(name = "rateLimiterLicenseService", fallbackMethod = "buildFallbackLicense")
   @Retry(name = "retryLicenseService", fallbackMethod = "buildFallbackLicense")
-  @Bulkhead(name = "bulkheadLicenseService", type = Bulkhead.Type.THREADPOOL,
+  @Bulkhead(name = "bulkheadLicenseService", type = Bulkhead.Type.SEMAPHORE,
           fallbackMethod = "buildFallbackLicense")
   @Override
   public License findByOrganizationIdAndLicenseId(String organizationId, String licenseId) throws TimeoutException {
