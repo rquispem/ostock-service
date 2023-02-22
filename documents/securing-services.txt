@@ -1,0 +1,95 @@
+Asegurar una arquitectura de microservicios es una tarea compleja y laboriosa que implica múltiples capas de
+ protección:
+
+ - La capa de aplicación: garantiza que se implementen los controles de usuario adecuados para que podamos validar que
+ un usuario es quien dice ser y que tiene permiso para hacer lo que está tratando de hacer.
+ - Infraestructura: mantiene el servicio en funcionamiento, parcheado y actualizado para minimizar el riesgo de vulnerabilidades
+ - Capa de red: implementa controles de acceso a la red para que solo se pueda acceder a un servicio a través de
+  puertos bien definidos y solo para una pequeña cantidad de servidores autorizados.
+
+  Además, existen otras herramientas, como el Proyecto de verificación de dependencias de OWASP, que pueden ayudar a
+  identificar vulnerabilidades.
+
+El proyecto OWASP Dependency-Check es una herramienta de análisis de composición de software (SCA) de OWASP que nos
+permite identificar vulnerabilidades divulgadas públicamente.
+https://owasp.org/www-project-dependency-check/
+
+Para implementar controles de autorización y autenticación, utilizaremos el módulo Spring Cloud Security y Keycloak
+para proteger nuestros servicios basados en Spring
+
+
+Oauth 2
+========
+OAuth2 es un marco de seguridad basado en tokens que describe patrones para otorgar autorización pero no define cómo
+realizar realmente la autenticación. En su lugar, permite a los usuarios autenticarse con un servicio de autenticación
+de terceros, denominado proveedor de identidad (IdP). Si el usuario se autentica con éxito, se le presenta un token que
+debe enviarse con cada solicitud. Luego, el token se puede volver a validar en el servicio de autenticación.
+El objetivo principal detrás de OAuth2 es que cuando se llama a múltiples servicios para cumplir con la solicitud de un
+usuario, el usuario puede ser autenticado por cada servicio sin tener que presentar sus credenciales a cada servicio que
+procesa su solicitud. OAuth2 nos permite proteger nuestros servicios basados ​​en REST en diferentes escenarios a
+través de esquemas de autenticación llamados "grants".
+
+ The OAuth2 specification has four types of grants:
+ - Password
+ - Client credential
+ - Authorization code
+ - Implicit
+
+El poder real detrás de OAuth2 es que permite a los desarrolladores de aplicaciones integrarse fácilmente con proveedores
+de nube de terceros y autenticar y autorizar a los usuarios con esos servicios sin tener que pasar las credenciales del
+usuario continuamente al servicio de terceros
+
+OpenID Connect (OIDC):
+====================
+Es una capa adicional sobre el framework OAuth2 que proporciona información de autenticación y perfil sobre quién está
+conectado a la aplicación (la identidad). Cuando un servidor de autorización es compatible con OIDC, a veces se le
+denomina proveedor de identidad.
+
+Keycloak
+=========
+Es un software de gestión de acceso e identidad de código abierto para aplicaciones y servicios modernos.
+Este software de código abierto está escrito en Java y es compatible con los protocolos de identidad federados SAML
+ (Security Assertion Markup Language) v2 y OpenID Connect (OIDC)/OAuth2.
+
+El principal objetivo de Keycloak es facilitar la protección de los servicios y aplicaciones con poco o ningún código.
+
+- Centraliza la autenticación y habilita la autenticación de inicio de sesión único (SSO).
+- Permite a los desarrolladores centrarse en la funcionalidad empresarial en lugar de preocuparse por
+  aspectos de seguridad como autorización y autenticación.
+- Permite autenticación de dos factores.(2 factor authentication)
+- Es compatible con LDAP.
+- Ofrece varios adaptadores para asegurar aplicaciones y servidores fácilmente.
+- Te permite personalizar las políticas de contraseñas.
+
+Componenes de seguridad de keycloak
+====================================
+1. Recurso protegido: El recurso (en nuestro caso, un microservicio) que desea proteger, asegurándose de que solo los
+usuarios autenticados que tengan la autorización adecuada puedan acceder a él.
+
+2. Propietario del recurso: Este propietario define qué aplicaciones pueden llamar al servicio, qué usuarios tienen
+acceso al servicio y qué pueden hacer los usuarios con el servicio. Cada aplicación registrada por el propietario del
+recurso recibe un nombre de aplicación que identifica la aplicación, junto con una clave secreta. La combinación del
+nombre de la aplicación y la clave secreta son parte de las credenciales que se pasan al autenticar un token de acceso.
+
+3. Aplicacion: Esta es la aplicación que llamará al servicio en nombre de un usuario.
+
+4. Servidor de autenticacion y autorizacion: El servidor de autenticación es el intermediario entre la aplicación y
+ los servicios que se consumen. El servidor de autenticación permite al usuario autenticarse a sí mismo sin tener que
+ pasar sus credenciales de usuario a cada servicio que la aplicación va a llamar en su nombre
+
+Nota
+====
+Los usuarios se autentican con el servidor Keycloak proporcionando sus credenciales y la aplicación/dispositivo que
+están utilizando para acceder a un recurso protegido (el microservicio). Si las credenciales de los usuarios son válidas,
+el servidor Keycloak proporciona un token de autenticación que se puede pasar de un servicio a otro cada vez que los
+usuarios utilizan un servicio.
+
+Luego, el recurso protegido puede comunicarse con el servidor Keycloak para determinar la validez del token y recuperar
+los roles asignados para un usuario. Los roles se utilizan para agrupar a los usuarios relacionados y definir a qué
+recursos pueden acceder.
+
+La seguridad de los servicios web es un tema extremadamente complicado. Necesitamos entender quién va a llamar a nuestros
+servicios (usuarios internos o usuarios externos), cómo van a llamar a nuestro servicio (cliente web interno, dispositivo
+móvil o aplicación web) y qué acciones van a realizar. tomar con nuestro código.
+
+https://github.com/ keycloak/keycloak-containers/tree/master/docker-compose-examples.

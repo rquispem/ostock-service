@@ -6,7 +6,7 @@ spring:
   #    Spring Boot 2.4 introduced a new way to import configuration data via the spring.config.import property.
   #  This is now the default way to bind to Config Server.
   config:
-    import: configserver:http://localhost:8071/
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8071/}
 
 server:
   port: 8081
@@ -16,8 +16,8 @@ eureka:
   client:
     registerWithEureka: true
     fetchRegistry: true
-    serviceUrl:
-      defaultZone: http://localhost:8070/eureka/
+#    serviceUrl:
+#      defaultZone: http://localhost:8070/eureka/
 management:
   endpoints:
     enabled-by-default: false

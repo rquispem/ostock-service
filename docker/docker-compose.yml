@@ -1,18 +1,16 @@
 version: '3.9'
 services:
   database:
+    container_name: database
     image: postgres:latest
     ports:
       - "5433:5433"
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "root123"
+      PGPASSWORD: "root123"
       POSTGRES_DB:       "ostock_dev"
       PGPORT: 5433
-    #    expose:
-    #      - "5433"
-    #      - "5432"
-    #    command: -p 5433
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/1-init.sql
       - ./data.sql:/docker-entrypoint-initdb.d/2-data.sql
@@ -26,7 +24,8 @@ services:
       timeout: 5s
       retries: 5
   configserver:
-    image: rquispe/configserver:0.0.1-SNAPSHOT
+    container_name: configserver
+    image: rquispe/config-server:1.0-SNAPSHOT
     ports:
       - "8071:8071"
     environment:
@@ -36,9 +35,13 @@ services:
         aliases:
           - "configserver"
   eurekaserver:
-    image: rquispe/eurekaserver:0.0.1-SNAPSHOT
+    container_name: eurekaserver
+    image: rquispe/eureka-server:1.0-SNAPSHOT
     ports:
       - "8070:8070"
+    environment:
+      CONFIG_SERVER_URI: "http://configserver:8071/"
+      EUREKA_SERVER_URI: "http://eurekaserver:8070/eureka/"
     depends_on:
       database:
         condition: service_healthy
@@ -48,14 +51,44 @@ services:
       backend:
         aliases:
           - "eurekaserver"
-  licensingservice:
-    image: rquispe/licensing-service:0.0.2-SNAPSHOT
+  gatewayserver:
+    container_name: gatewayserver
+    image: rquispe/gateway-server:1.0-SNAPSHOT
+    ports:
+      - "8072:8072"
     environment:
-      PROFILE: "dev"
-      CONFIGSERVER_URI: "http://configserver:8071"
-      CONFIGSERVER_PORT:   "8071"
-      DATABASESERVER_PORT: "5433"
-      #      SPRING_DATASOURCE_URL: "jdbc:postgresql://database/ostock_dev"
+      CONFIG_SERVER_URI: "http://configserver:8071/"
+      EUREKA_SERVER_URI: "http://eurekaserver:8070/eureka/"
+    depends_on:
+      database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "gateway"
+#  keycloak:
+#    image: jboss/keycloak
+#    restart: always
+#    environment:
+#      KEYCLOAK_USER: admin
+#      KEYCLOAK_PASSWORD: admin
+#    ports:
+#      - "8080:8080"
+#    networks:
+#      backend:
+#        aliases:
+#          - "keycloak"
+  licensingservice:
+    container_name: licensingservice
+    image: rquispe/licensing-service:1.0-SNAPSHOT
+    environment:
+      CONFIG_SERVER_URI: "http://configserver:8071/"
+      EUREKA_SERVER_URI: "http://eurekaserver:8070/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://database:5433/ostock_dev"
       ENCRYPT_KEY: "fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo"
     depends_on:
       database:
@@ -63,17 +96,16 @@ services:
       configserver:
         condition: service_started
     ports:
-      - "8080:8080"
+      - "8180:8080"
     networks:
       - backend
   organizationservice:
-    image: rquispe/organization-service:0.0.1-SNAPSHOT
+    container_name: organizationservice
+    image: rquispe/organization-service:1.0-SNAPSHOT
     environment:
-      PROFILE: "dev"
-      CONFIGSERVER_URI: "http://configserver:8071"
-      CONFIGSERVER_PORT: "8071"
-      DATABASESERVER_PORT: "5433"
-      #      SPRING_DATASOURCE_URL: "jdbc:postgresql://database/ostock_dev"
+      CONFIG_SERVER_URI: "http://configserver:8071/"
+      EUREKA_SERVER_URI: "http://eurekaserver:8070/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://database:5433/ostock_dev"
       ENCRYPT_KEY: "fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo"
     depends_on:
       database:

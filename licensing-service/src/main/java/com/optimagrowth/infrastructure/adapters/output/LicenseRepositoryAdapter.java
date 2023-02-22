@@ -54,7 +54,6 @@ public class LicenseRepositoryAdapter implements LicenseRepository {
   public License findByOrganizationIdAndLicenseId(String organizationId, String licenseId) throws TimeoutException {
     log.debug("findByOrganizationIdAndLicenseId Correlation id: {}",
             1L);
-    randomlyRunLong();
     var license = licenseRepository.findByOrganizationIdAndLicenseId(organizationId, licenseId);
     return mapper.toModelFromEntity(license);
   }
