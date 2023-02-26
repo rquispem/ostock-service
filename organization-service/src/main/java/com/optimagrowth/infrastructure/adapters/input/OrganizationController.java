@@ -6,6 +6,7 @@ import com.optimagrowth.infrastructure.dto.api.request.UpdateOrganizationRequest
 import com.optimagrowth.infrastructure.dto.api.response.CreateOrganizationResponse;
 import com.optimagrowth.infrastructure.dto.api.response.GetOrganizationResponse;
 import com.optimagrowth.infrastructure.mapper.OrganizationMapper;
+import javax.annotation.security.RolesAllowed;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +29,7 @@ public class OrganizationController {
     this.organizationMapper = organizationMapper;
   }
 
+  @RolesAllowed({"ADMIN", "USER"})
   @GetMapping(value = "/{organizationId}")
   public ResponseEntity<GetOrganizationResponse> getOrganization(
           @PathVariable("organizationId") String organizationId) {
@@ -35,12 +37,14 @@ public class OrganizationController {
     return ResponseEntity.ok(organizationMapper.ToGetOrganizationResponse(organization));
   }
 
+  @RolesAllowed({"ADMIN", "USER"})
   @PutMapping(value = "/{organizationId}")
   public void updateOrganization(@PathVariable("organizationId") String id,
                                   @RequestBody UpdateOrganizationRequest organization) {
     organizationService.update(organizationMapper.toModelFrom(organization));
   }
 
+  @RolesAllowed({"ADMIN", "USER"})
   @PostMapping
   public ResponseEntity<CreateOrganizationResponse>  saveOrganization(
           @RequestBody CreateOrganizationRequest organization) {
@@ -49,6 +53,7 @@ public class OrganizationController {
                     .toModelFrom(organization))));
   }
 
+  @RolesAllowed("ADMIN")
   @DeleteMapping(value = "/{organizationId}")
   public void deleteOrganization(@PathVariable("organizationId") String organizationId) {
     organizationService.delete(organizationId);

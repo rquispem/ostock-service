@@ -92,4 +92,75 @@ La seguridad de los servicios web es un tema extremadamente complicado. Necesita
 servicios (usuarios internos o usuarios externos), cómo van a llamar a nuestro servicio (cliente web interno, dispositivo
 móvil o aplicación web) y qué acciones van a realizar. tomar con nuestro código.
 
+You can use Keycloak with several databases like H2, PostgreSQL, MySQL, Microsoft SQL Server, Oracle, and MariaDB.
 https://github.com/ keycloak/keycloak-containers/tree/master/docker-compose-examples.
+
+While the creation and management of access tokens is the Keycloak server’s responsibility,
+in Spring, the definition of which user roles have permissions to do what actions occurs at the
+ individual service level.
+
+Pasos en el servicio a proteger
+ Add the appropriate Spring Security and Keycloak JARs to the service we’re protecting.
+ Configure the service to point to our Keycloak server.
+ Define what and who can access the service.
+
+Access rules can range from coarse-grained (any authenticated user can access the entire service) to fine-grained
+ (only the application with this role, but accessing this URL through a DELETE is allowed).
+ Only authenticated users can access a service URL.
+ Only users with a specific role can access a service URL.
+
+ SSO Protocols (Single Sign ON)
+ - SAML (SECURITY ASSERTION MARKUP LANGUAGE)
+ - OAUTH (Open Authorization)
+ - OIDC(OPENID CONNECT)
+
+ Cuando instalen keycloak server para probarlo localmente con postman
+ configurar el archivo /etc/hosts con keycloak para que no haya problema al
+ usar el access token
+127.0.0.1       localhost keycloak
+
+
+docker exec -it database bash
+psql -U postgres
+psql -U <user> -d <database>
+psql -U root -d ostock_dev
+https://hasura.io/blog/top-psql-commands-and-flags-you-need-to-know-postgresql/
+
+Consideraciones:
+==================
+As you shape your microservices for production use, you should also build your microservice security around the
+following practices:
+ Use HTTPS/Secure Sockets Layer (SSL) for all service communications.
+your microservices should communicate only through the encrypted channels provided through HTTPS and SSL. Note that the con- figuration and setup of HTTPS can be automated through your DevOps scripts
+ Use an API gateway for all service calls.
+Configure the network layer on the operating system or container that your microservices are running in to only accept traffic from the service gateway. Remember, the service gateway can act as a Policy Enforcement Point (PEP), which can be enforced in all services.
+Putting service calls through a service gateway allows you to be consistent in how you’re securing and auditing your services. A service gateway also allows you to lock down what port and endpoints you’re going to expose to the outside world.
+ Provide zones for your services (for example, a public API and private API).
+ Limit the attack surface of your microservices by locking down unneeded net-
+work ports.
+
+Security, in general, is all about building layers of access and enforcing the concept of least privilege. Least privilege implies that a user should have only the bare minimum net- work access and privileges to do their day-to-day job. To this end, you should implement least privilege by separating your services into two distinct zones: public and private.
+The public zone contains all the public APIs that will be consumed by your clients (in this book’s examples, the O-stock application). Public API microservices should carry out narrow tasks that are workflow oriented. These microservices tend to be ser- vice aggregators, pulling data and carrying out tasks across multiple services. Public microservices should also be behind their own service gateway and have their own authentication service for performing authentication and authorization. Access to public services by client applications should go through a single route protected by the service gateway. Also, the public zone should have its own authentication service.
+The private zone acts as a wall to protect your core application functionality and data. It should only be accessible through a single, well-known port and should be locked down to only accept network traffic from the network subnet where the private services are running. The private zone should have its own gateway and authentica- tion service. Public API services should authenticate against the private zone’s authen- tication service. All application data should at least be in the private zone’s network subnet and only accessible by microservices residing in the private zone.
+
+Many developers don’t take a hard look at the absolute minimum number of ports they need to open for their services to function. Configure the operating system your service is running on to only allow inbound and outbound access to the ports or a piece of infrastructure needed by your service (monitoring, log aggregation).
+Don’t focus only on inbound access ports. Many developers forget to lock down their outbound ports. Locking down your outbound ports can prevent data from being leaked out of your service if an attacker has compromised the service itself. Also, make sure you look at network port access in both your public and private API zones.
+
+Resumen
+==================
+- OAuth2 is a token-based authorization framework that provides different mech- anisms for protecting web service calls.
+These mechanisms are called grants.
+- OpenID Connect (OIDC) is a layer on top of the OAuth2 framework that pro- vides authentication and profile information
+about who is logged in to the application (identity).
+- Keycloak is an open source identity and access management solution for micro- services and applications.
+The main objective of Keycloak is to facilitate the protection of the services and applications with little or no code.
+- Each application can have its own Keycloak application name and secret key.
+- Each service must define what actions a role can take.
+- Spring Cloud Security supports the JSON Web Token (JWT) specification. With
+  JWT, we can inject custom fields into the specification.
+- In a production environment, we should use HTTPS to encrypt all calls
+  between services.
+- Use a service gateway to narrow the number of access points through which a
+  service can be reached.
+- Limit the attack surface for a service by limiting the number of inbound and
+outbound ports on the operating system that the service is running on.

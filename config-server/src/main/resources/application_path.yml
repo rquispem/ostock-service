@@ -5,16 +5,14 @@ spring:
     name: config-server
   profiles:
     active:
-      - native, git
+      - native
   cloud:
     config:
       server:
-        git:
-          skip-ssl-validation: true
-          default-label: master
-          uri: https://github.com/rquispem/cloud-config.git
-#          Tells Spring Cloud Config what path in Git to use to look for the config files
-          searchPaths: licensingservice
+        native:
+          searchLocations:
+            classpath: /config
+        bootstrap: true
 #port where config server will listen in on, in order to provide
 #  the requested configuration data.
 server:

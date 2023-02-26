@@ -99,3 +99,6 @@ logging:
     org.springframework.web: WARN
     com.optimagrowth: DEBUG
     io.github.resilience4j: TRACE
+
+server:
+  port: 8082

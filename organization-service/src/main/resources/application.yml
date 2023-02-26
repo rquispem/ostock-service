@@ -32,3 +32,12 @@ management:
       enabled: true
     diskspace:
       enabled: true
+
+#keycloak:
+#  realm: spmia-realm
+#  auth-server-url: http://localhost:8080
+#  ssl-required: external
+#  use-resource-role-mappings: true
+#  bearer-only: true
+#  resource: ostock
+#  credentials.secret: IQdLisO94wrct7cnHaFIwQbguznltLNc
