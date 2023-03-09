@@ -1,0 +1,38 @@
+Conectarse a postgress
+=====================
+docker exec -it database bash
+psql -U postgres
+psql -U <user> -d <database>
+psql -U root -d ostock_dev
+https://hasura.io/blog/top-psql-commands-and-flags-you-need-to-know-postgresql/
+
+Conectarse a kafka
+=====================
+docker-compose exec kafkaserver
+/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic orgChangeTopic
+/bin/kafka-console-producer --bootstrap-server localhost:9092 --topic orgChangeTopic
+
+Comandos docker compose
+=====================
+ docker-compose rm -f <service_name>   -- Removes force stopped service containers
+ docker-compose create <service_name> <service_name>  --Creates containers for a service.
+ docker-compose start <service_name> <service_name>   --Start services
+ docker-compose stop <service_name> <service_name>  --Stop services
+ docker-compose restart <service_name> <service_name>
+ docker-compose exec -it <service_name> bash   --  Execute a command in a running container.
+ docker-compose up  -- Create and start containers
+ docker-compose down  -- Stop and remove containers, networks
+ docker-compose logs -f <service_name>  --View output from containers
+ docker-compose ls    -- List running compose projects
+ docker-compose ps    --  List containers
+ docker-compose pause <service_name>  -- Pause services
+ docker-compose unpause <service_name>  -- Unpause services
+ docker-compose pull
+ docker-compose push
+ docker-compose port <service_name>
+ docker-compose kill <service_name>  --Force stop service containers.
+ docker-compose images <service_name>  --List images used by the created containers
+ docker-compose events <service_name>  --Receive real time events from containers
+
+
+

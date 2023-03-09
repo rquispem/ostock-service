@@ -1,0 +1,160 @@
+El uso de mensajes asincrónicos para comunicarse entre aplicaciones no es nuevo. Lo que es nuevo es el concepto de usar
+mensajes para comunicar eventos que representan cambios de estado. Este concepto se denomina arquitectura dirigida por'
+ eventos (EDA). También se conoce como arquitectura impulsada por mensajes (MDA). Lo que nos permite hacer un enfoque
+ asado en EDA es construir sistemas altamente desacoplados que pueden reaccionar a los cambios sin estar estrechamente
+ acoplados a bibliotecas o servicios específicos. Cuando se combina con microservicios, EDA nos permite agregar
+ rápidamente nuevas funciones a nuestra aplicación simplemente haciendo que el servicio escuche el flujo de eventos
+ (mensajes) que emite nuestra aplicación.
+
+Spring Cloud Stream nos permite implementar fácilmente la publicación y el consumo de mensajes mientras protege nuestros
+ servicios de los detalles de implementación asociados con la plataforma de mensajería subyacente.
+
+ Ventajas:
+ - loose coupling:  a synchronous HTTP response creates a hard dependency between the licensing and organization services
+ A messaging approach allows us to decouple the two services because, when it comes to communicating state changes,
+ neither service knows about each other. When the organization service needs to publish a state change, it writes a message to a queue. The licensing service only knows that it gets a message; it has no idea who has published the message.
+
+ -durability: The presence of the queue allows us to guarantee that a message will be delivered even if the consumer of
+ the service is down.
+
+ -scalability: Because messages are stored in a queue, the sender of the message doesn’t have to wait for a response
+  from the message consumer. The sender can go on its way and con- tinue working. Likewise, if a consumer reading a
+  message from the queue isn’t pro- cessing messages fast enough, it’s a trivial task to spin up more consumers and
+  have them process the messages. This scalability approach fits well within a microservices model.
+  Traditional scaling mechanisms for reading messages in a queue involved increas- ing the number of threads that a
+   message consumer could process at one time. Unfor- tunately, with this approach, we were ultimately limited by the
+   number of CPUs available to the message consumer. A microservice model doesn’t have this limitation because we can
+   scale by increasing the number of machines hosting the service con- suming the messages.
+
+ -flexibility: The sender of a message has no idea who is going to consume it. This means we can easily add new message
+  consumers (and new functionality) without impacting the original sending service
+
+ Downsides
+ Using messages in a microservice-based application requires more than understand- ing how to publish and consume messages.
+ It requires that we understand how our application will behave
+ Like any architectural model, a message-based architecture has trade-offs. A message- based architecture can be
+ complicated and requires the development team to pay close attention to several key things, including
+  - message-handling semantics: For example, if we have strict require- ments that all orders from a single customer
+  must be processed in the order they are received, we’ll need to set up and structure our message handling differently than if every message can be consumed independently of one another.
+  It also means that if we’re using messaging to enforce strict state transitions of our data, we need to think about
+  designing our applications to take into consideration scenarios where a message throws an exception or an error is
+  processed out of order. If a message fails, do we retry processing the error or do we let it fail? How do we han- dle
+  future messages related to that customer if one of the customer’s messages fails?
+
+  - message visibility: Using messages in our microservices often means a mix of synchronous service calls and
+   asynchronous service processing. The asynchronous nature of messages means they might not be received or processed
+   in close proximity to when the message is published or consumed. Also, having things like correlation IDs for tracking
+   a user’s transactions across web service invocations and messages is critical to understanding and debugging what’s
+   going on in our application
+   correlation ID is a unique number that’s generated at the start of a user’s trans- action and passed along with every
+   service call. It should also be passed along with every message that’s published and consumed.
+
+  - message choreography: a message-based application makes it more difficult to reason through its business logic
+  because its code is no longer pro- cessed in a linear fashion with a simple block request-response model. Instead,
+  debug- ging message-based applications can involve wading through the logs of several different services, where user
+   transactions can be executed out of order and at differ- ent times.
+
+Spring Cloud Stream
+====================
+is an annotation-driven framework that allows us to easily build message publishers and consumers in our Spring applications.
+Spring Cloud Stream also allows us to abstract away the implementation details of the messaging platform that we’re using
+
+Kafka is a highly performant message bus that allows us to asynchronously send streams of messages from one application to one or more other applications
+
+Componentes
+- source: service's spring code que publica el mensaje
+- channel: el mensaje es publicado a un canal
+- binder: Es el codigo de spring cloud stream framework que se comunica con el sistema de mensajeria
+- sink: es el codigo especifico del servicio que escucha un canal y luego procesa los mensajes entrantes
+
+service A(producer) -> business logic -> source -> channel -> binder
+| Service B(consumer) -> Binder -> channel -> sink -> business logic
+
+When a service gets ready to publish a message, it will publish the message using a source.
+ A source is a Spring-annotated interface that takes a Plain Old Java Object (POJO), which represents
+ the message to be published. The source takes the message, serializes it (the default serialization is JSON),
+  and publishes the message to a channel.
+
+A channel is an abstraction over the queue that’s going to hold the message after it’s published by a message producer
+ or consumed by a message consumer. In other words, we can describe a channel as a queue that sends and receives messages
+ Un nombre de canal siempre está asociado con un nombre de cola de destino, pero ese nombre de cola nunca se expone
+ directamente al código. En cambio, el nombre del canal se usa en el código, lo que significa que podemos cambiar las colas desde las que el canal lee o escribe cambiando la configuración de la aplicación, no el código de la aplicación.
+
+ The binder is part of the Spring Cloud Stream framework. It’s the Spring code that talks to a specific message platform.
+ The binder part of the Spring Cloud Stream framework allows us to work with messages without having to be exposed to platform- specific libraries and APIs for publishing and consuming messages.
+
+ In Spring Cloud Stream, when a service receives a message from a queue, it does it through a sink.
+ A sink listens to a channel for incoming messages and deserializes the message back into a POJO object.
+ From there, the message can be processed by the business logic of the Spring service.
+
+ @EnableBinding(Source.class)
+  tells Spring Cloud Stream that we want to bind the service to a message broker. The use of Source.class in @EnableBinding tells Spring Cloud Stream that this service will communicate with the message broker via a set of channels defined in the Source class. Remember, channels sit above a mes- sage queue. Spring Cloud Stream has a default set of channels that can be configured to speak to a message broker.
+
+https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/spring-cloud-stream.html#spring_cloud_function
+
+siempre obligamos a los otros servicios a volver al maestro (el servicio que posee los datos) para recuperar una nueva
+copia de los datos. Este enfoque es más costoso en términos de tiempo de ejecución, pero garantiza que siempre tengamos
+ la última copia de los datos.
+
+Nuestro consejo es que piense detenidamente en la cantidad de datos que está transmitiendo. Tarde o temprano, se
+encontrará con una situación en la que los datos pasados están "obsoletos". Podría deberse a que un problema hizo
+que permaneciera en la cola de mensajes demasiado tiempo, o un mensaje anterior que contenía datos falló y los datos
+que está pasando en el mensaje ahora representan datos en un estado inconsistente. Esto podría deberse a que su
+aplicación se basó en el estado del mensaje en lugar del estado real en el almacén de datos subyacente. Si va a pasar
+el estado en su mensaje, asegúrese de incluir un sello de fecha y hora o un número de versión para que el servicio que
+consume los datos pueda inspeccionar los datos que se le pasan y asegurarse de que no sea anterior a la copia del datos
+que ya tiene.
+
+El concepto de un grupo de consumidores es este: podemos tener múltiples servicios y cada servicio tiene múltiples instancias escuchando la misma cola de mensajes. Queremos que cada servicio único procese una copia de un mensaje, pero solo queremos que una instancia de servicio dentro de un grupo de instancias de servicio consuma y procese un mensaje
+
+As long as all the service instances have the same group name, Spring Cloud Stream and the underlying message broker will guarantee that only one copy of the message will be consumed by a service instance belonging to that group.
+
+Distributed caching
+=========================
+Using Redis as a distributed cache is relevant to microservices development in the cloud. You can use Redis to:
+- Improve performance when looking up commonly held data. Using a cache, you can significantly improve the performance of several key services by avoiding reads to the database.
+- Reduce the load (and cost) on the database tables holding your data. Access- ing data in a database can be a costly undertaking. With every read, you make a chargeable event. Using a Redis server, you can implement reads by a primary key rather than by accessing a database, which is significantly more cost effective.
+- Increase resiliency so your services can degrade gracefully if your primary data store or database is having performance problems. Depending on how much data you keep in your cache, a caching solution can help reduce the number of errors you might get from accessing your data store.
+
+Redis is a key-value data store that acts like a big, distributed, in-memory HashMap. In the simplest case, it stores and looks up data with a key. It doesn’t have any sophisti- cated query language to retrieve data
+
+// Sets the name of the hash in the Redis server where the organization data is stored
+@RedisHash("organization")
+
+Redis server can contain multiple hashes and data structures within it. We therefore need to tell Redis the name of the data structure we want to perform the operation against in every interaction with Redis
+
+
+Defining custom channels
+========================================
+Previously we built our messaging integration between the licensing and organization services to use the default output and input channels that are packaged with the Source and Sink interfaces in Spring Cloud Stream However, if we want to define more than one channel for our application, or we want to customize the names of our channels, we can define our own interface and expose as many input and output channels as our application needs.
+
+To create a custom channel,
+public interface CustomChannels {
+@Input("inboundOrgChanges")
+SubscribableChannel orgs();
+}
+for each custom input channel we want to expose, we define a method with @Input that returns a SubscribableChannel
+
+We then use @OutputChannel before the method that will be called if we want to define output channels for publishing messages. In the case of an output channel, the defined method returns a MessageChannel class instead of the SubscribableChannel class used with the input channel
+@OutputChannel(“outboundOrg”)
+MessageChannel outboundOrg();
+
+Now that we have a custom input channel, we need to modify two more things
+
+//Parts removed for conciseness
+spring.cloud.stream.bindings.inboundOrgChanges.destination=
+    orgChangeTopic
+spring.cloud.stream.bindings.inboundOrgChanges.content-type=
+    application/json
+spring.cloud.stream.bindings.inboundOrgChanges.group=
+     licensingGroup
+
+Next, we need to inject the CustomChannels interface previously defined into a class that’s going to use it to process messages
+
+Summary
+ Asynchronous communication with messaging is a critical part of microservices architecture.
+ Using messaging within our applications allows our services to scale and become more fault tolerant.
+ Spring Cloud Stream simplifies the production and consumption of messages by using simple annotations and abstracting away platform-specific details of the underlying message platform.
+ A Spring Cloud Stream message source is an annotated Java method that’s used to publish messages to a message broker’s queue.
+ A Spring Cloud Stream message sink is an annotated Java method that receives messages from a message broker’s queue.
+ Redis is a key-value store that you can use as both a database and a cache.
