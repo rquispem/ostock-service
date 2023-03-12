@@ -1,0 +1,114 @@
+La arquitectura de microservicios es un poderoso paradigma de diseño para dividir sistemas de software monolíticos complejos en piezas más pequeñas y manejables.
+
+Estas piezas se pueden construir y desplegar independientemente unas de otras; sin embargo, esta flexibilidad tiene un precio: la complejidad.
+
+Debido a que los microservicios son distribuidos por naturaleza, tratar de depurar dónde ocurre un problema puede ser enloquecedor. La naturaleza distribuida de los servicios significa que necesitamos rastrear una o más transacciones a través de múltiples servicios, máquinas físicas y diferentes almacenes de datos, y luego tratar de reconstruir lo que está sucediendo exactamente.
+
+- Uso de ID de correlación para vincular transacciones entre múltiples servicios
+
+- Agregar datos de registro de varios servicios en una única fuente de búsqueda (log aggregation)
+
+- Visualizar el flujo de una transacción de usuario a través de múltiples servicios para comprender
+  cada parte de las características de rendimiento de la transacción
+
+- Analizar, buscar y visualizar datos de registro en tiempo real usando la pila ELK
+
+Tecnologias
+- Spring Cloud Sleuth: El proyecto Spring Cloud Sleuth instrumenta nuestras solicitudes HTTP entrantes con ID de seguimiento (también conocidas como ID de correlación). Lo hace agregando filtros e interactuando con otros componentes de Spring para permitir que los ID de correlación generados pasen a todas las llamadas del sistema.
+
+- Zipkin: es una herramienta de visualización de datos de código abierto que muestra el flujo de una transacción en múltiples servicios. Zipkin nos permite dividir una transacción en sus componentes e identificar visualmente dónde podría haber puntos críticos de rendimiento.
+
+- The ELK stack: combina tres herramientas de código abierto, Elasticsearch, Logstash y Kibana, que nos permiten analizar, buscar y visualizar registros en tiempo real.
+
+Spring’s Mapped Diagnostic Context (MDC)
+MDC is a map that stores a set of key-value pairs provided by the application that’s inserted in the log messages.
+
+correlation ID
+===============
+Adding Spring Cloud Sleuth to our microservices, we can:
+- Transparently create and inject a correlation ID into our service calls if one doesn’t exist
+- Manage the propagation of correlation IDs to outbound service calls so that the correlation ID for a transaction is automatically added
+- Add the correlation information to Spring’s MDC logging so that the generated correlation ID is automatically logged by Spring Boot’s default SL4J and Log- back implementation
+-  Optionally, publish the tracing information in the service call to the Zipkin dis- tributed tracing platform
+
+Mapped Diagnostic Contexts shine brightest within client server architectures. Typically, multiple clients will be served by multiple threads on the server. Although the methods in the MDC class are static, the diagnostic context is managed on a per-thread basis, allowing each server thread to bear a distinct MDC stamp. MDC operations such as put() and get() affect only the MDC of the current thread, and the children of the current thread. The MDC in other threads remain unaffected. Given that MDC information is managed on a per-thread basis, each thread will have its own copy of the MDC. Thus, there is no need for the developer to worry about thread-safety or synchronization when programming with the MDC because it handles these issues safely and transparently.
+
+Anatomia de spring sleuth trace
+===============================
+Spring Cloud Sleuth adds four pieces of information to each log entry
+DEBUG [<APP-NAME>, <TRACE ID>, <SPAN ID>, <SEND TO ZIPKIN FLAG>]
+-APP-NAME: Nombre del servicio logueado
+-TRACE ID: Identificador unico para el request del usuario que sera propagado a todas las llamadas a otros servicios en el request
+-SPAN ID: un identificador único para un solo segmento en la solicitud general del usuario. Each ser- vice participating within the transaction will have its own span ID
+
+-SEND TO ZIPKIN FLAG: retraso que indica si los datos se enviarán al servidor Zipkin para su seguimiento. true/false indicator that determines whether trace data is sent to Zipkin
+
+Log aggregation
+===============
+En un entorno de microservicios a gran escala (especialmente en la nube), el registro de datos es una herramienta fundamental para la depuración. Sin embargo, debido a que la funcionalidad de una aplicación basada en microservicios se descompone en servicios pequeños y granulares, y podemos tener múltiples instancias de servicio para un solo tipo de servicio, tratando de vincular la depuración para registrar datos de múltiples servicios para resolver el problema de un usuario. problema puede ser extremadamente difícil.
+
+Un enfoque mucho mejor es transmitir, en tiempo real, todos los registros de todas nuestras instancias de servicio a un punto de agregación centralizado, donde los datos de registro se pueden indexar y buscar.
+
+
+Afortunadamente, existen varios productos comerciales y de código abierto que pueden ayudarnos a implementar la arquitectura de registro de la figura 11.3. Además, existen múltiples modelos de implementación que nos permiten elegir entre una solución local administrada localmente o una solución basada en la nube.
+
+
+the licensing, organization, and gateway services communicate via TCP with Logstash to send the log data. Logstash filters, transforms, and passes the data to a central data store (in this case, Elasticsearch). Elasticsearch indexes and stores the data in a searchable format so it can be queried later by Kibana. Once the data is stored, Kibana uses the index patterns from Elasticsearch to retrieve the data.
+At this point, we can create a specific query index and enter a Spring Cloud Sleuth trace ID to see all of the log entries from the different services that contain it. Once the data is stored, we can look for the real-time logs by just accessing Kibana.
+
+MDC: El contexto de diagnóstico asignado proporciona una forma de enriquecer los mensajes de registro con información que podría no estar disponible en el ámbito en el que realmente se produce el registro, pero que puede ser útil para realizar un mejor seguimiento de la ejecución del programa.
+
+
+Steps to setup
+===============
+
+1. agregar las dependencias a los servicios
+  <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-sleuth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.0.1</version>
+        </dependency>
+
+2. Agregar la configuracion de logback en logback-spring.xml de los servicios
+
+3.
+To set up our ELK Stack containers, we need to follow two simple steps. The first is to create the Logstash configuration file, and the second is to define the ELK Stack applications in our Docker configuration.
+
+
+https://www.elastic.co/guide/en/logstash/current/input-plugins.html
+https://www.elastic.co/guide/en/logstash/current/output-plugins.html
+https://www.elastic.co/guide/en/logstash/current/filter-plugins.html
+
+NOte 	Spring Cloud Sleuth will not work with Spring Boot 3.x onward. The last major version of Spring Boot that Sleuth will support is 2.x.
+check https://micrometer.io/docs/tracing
+https://github.com/micrometer-metrics/tracing/wiki/Spring-Cloud-Sleuth-3.1-Migration-Guide
+
+Zipkin
+=======
+is a distributed tracing platform that allows us to trace transactions across multiple service invocations. It lets us graphically see the amount of time a transaction takes and breaks down the time spent in each microservice involved in the call.
+
+El rastreo distribuido implica proporcionar una imagen visual de cómo fluye una transacción a través de nuestros diferentes microservicios. Las herramientas de rastreo distribuidas también brindan una aproximación aproximada de los tiempos de respuesta de los microservicios individuales. Sin embargo, las herramientas de seguimiento distribuidas no deben confundirse con los paquetes completos de gestión del rendimiento de aplicaciones (APM Application Performance Management ). Los paquetes APM ofrecen datos de rendimiento de bajo nivel listos para usar en el código de servicio real, así como datos de rendimiento como la memoria, la utilización de la CPU y la utilización de E/S más allá del tiempo de respuesta.
+
+Zipkin has the ability to send its tracing data to a Zipkin server via RabbitMQ or Kafka. From a functionality perspective, there’s no difference in Zipkin’s behavior if we use HTTP, RabbitMQ, or Kafka. With HTTP tracing, Zipkin uses an asynchronous thread to send performance data. The main advantage of using RabbitMQ or Kafka to collect tracing data is that if our Zipkin server is down, tracing messages sent to Zipkin are “enqueued” until Zipkin can pick up the data.
+
+One of the few things we need to configure when we run Zipkin is the backend data store that Zipkin uses to store the tracing data. Zipkin supports four different backend data stores:
+ In-memory data
+ MySQL (http://mysql.com/)
+ Cassandra (https://cassandra.apache.org/)  Elasticsearch (http://elastic.co/)
+One of the few things we need to configure when we run Zipkin is the backend data store that Zipkin uses to store the tracing data. Zipkin supports four different backend data stores:
+ In-memory data
+ MySQL (http://mysql.com/)
+ Cassandra (https://cassandra.apache.org/)  Elasticsearch (http://elastic.co/)
+
+Nota
+We need to also define how often each service should write data to Zipkin.
+By default, Zipkin only writes 10% of all transactions to the Zipkin server. The default value ensures that Zipkin will not overwhelm our logging and analysis infrastructure.
+
+The transaction sampling can be controlled by setting a Spring property on each of the services sending data to Zipkin: the spring.sleuth.sampler.percentage property. This property takes a value between 0 and 1 as follows:
+ A value of 0 means Spring Cloud Sleuth doesn’t send Zipkin any transactions.
+ A value of .5 means Spring Cloud Sleuth sends 50% of all transactions.
+ A value of 1 means Spring Cloud Sleuth sends all transactions (100%).

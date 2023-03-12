@@ -11,6 +11,7 @@ import org.springframework.web.server.ServerWebExchange;
 public class FilterUtils {
 
   public static final String CORRELATION_ID = "tmx-correlation-id";
+  public static final String TRACE_ID = "trace-id";
   public static final String AUTH_TOKEN     = "Authorization";
   public static final String USER_ID        = "tmx-user-id";
   public static final String ORG_ID         = "tmx-org-id";

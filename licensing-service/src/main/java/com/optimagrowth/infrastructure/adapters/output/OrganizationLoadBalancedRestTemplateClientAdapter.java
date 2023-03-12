@@ -1,5 +1,6 @@
 package com.optimagrowth.infrastructure.adapters.output;
 
+import brave.Tracer;
 import com.optimagrowth.application.ports.output.OrganizationDiscoveryClient;
 import com.optimagrowth.domain.Organization;
 import com.optimagrowth.infrastructure.database.repositories.OrganizationRedisRepository;
@@ -26,15 +27,18 @@ public class OrganizationLoadBalancedRestTemplateClientAdapter implements Organi
   private final String serviceUri;
   private final OrganizationRedisRepository organizationRedisRepository;
   private final OrganizationMapper organizationMapper;
+  private final Tracer tracer;
 
   public OrganizationLoadBalancedRestTemplateClientAdapter(KeycloakRestTemplate restTemplate,
                                                            @Value("${ostock.gateway.service.uri}") String serviceUri,
                                                            OrganizationRedisRepository organizationRedisRepository,
-                                                           OrganizationMapper organizationMapper) {
+                                                           OrganizationMapper organizationMapper,
+                                                           Tracer tracer) {
     this.restTemplate = restTemplate;
     this.serviceUri = serviceUri;
     this.organizationRedisRepository = organizationRedisRepository;
     this.organizationMapper = organizationMapper;
+    this.tracer = tracer;
   }
 
   /*

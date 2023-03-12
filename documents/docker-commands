@@ -12,6 +12,8 @@ docker-compose exec kafkaserver
 /bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic orgChangeTopic
 /bin/kafka-console-producer --bootstrap-server localhost:9092 --topic orgChangeTopic
 
+https://www.baeldung.com/kafka-docker-connection
+
 Comandos docker compose
 =====================
  docker-compose rm -f <service_name>   -- Removes force stopped service containers
